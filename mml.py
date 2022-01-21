@@ -50,11 +50,11 @@ class Lab():
         """ Remove all not full dna """
         self.samples = [x for x in self.samples if len(x.sequence[0].strip()) != 0 and len(x.sequence[1].strip()) != 0]
 
-    def sequence(self):
-        pass
-
-    def cleave(self):
-        pass
+    def cleave(self, enzyme):
+        for dna in self.samples:
+            other = dna.cleave(enzyme):
+            if other:
+                self.samples.append(other)
 
 
 class DNA():
@@ -155,6 +155,19 @@ class DNA():
             return False
 
         return True
+
+    def cleave(self, enzyme):
+        """ Cut the dna and sequence by the given enzym. If not found return none and do nothing """
+        try:
+            location1 = self.sequence[0].index(enzyme[0])
+            location2 = self.sequence[1].index(enzyme[1])
+        except ValueError:
+            return None
+
+        other = DNA(self.sequence[0][location1:], self.sequence[0][location2:])
+        self.sequence[0] = self.sequence[:location1]
+        self.sequence[1] = self.sequence[:location2]
+        return self, other
 
     def __str__(self):
         return "(" + self.sequence[0] + "|" + self.sequence[1] + ")"
