@@ -1,6 +1,8 @@
 from itertools import chain
 import random
 
+PCR_FAIL_CHANCE = 0.0001
+
 class Lab():
     def __init__(self, samples):
         self.samples = samples
@@ -42,7 +44,7 @@ class Lab():
 
     def length_sort(self):
         """ Sort the samples by len their len """
-        self.samples.sort(key=lambda x: len(x.sequence[0]) + len(x.sequence[1]), reversed=True)
+        self.samples.sort(key=lambda x: len(x.sequence[0]) + len(x.sequence[1]), reverse=True)
 
     def filter_by_length(self, expected):
         self.samples = [x for x in self.samples if len(x.sequence[0]) == expected[0] and len(x.sequence[1]) == expected[1]]
@@ -158,11 +160,16 @@ class DNA():
 
         # Fill with the pair of the base
         for i in range(len(self.sequence[0])):
+            # Fill the pair with a small chance of failing
             if self.sequence[0][i] == " ":
                 self.sequence[0][i] = self.get_pair_base(self.sequence[1][i])
+                if random.random() < PCR_FAIL_CHANCE:
+                    self.sequence[0][i], self.sequence[1][i] = self.sequence[1][i], self.sequence[0][i]
 
             elif self.sequence[1][i] == " ":
                 self.sequence[1][i] = self.get_pair_base(self.sequence[0][i])
+                if random.random() < PCR_FAIL_CHANCE:
+                    self.sequence[0][i], self.sequence[1][i] = self.sequence[1][i], self.sequence[0][i]
 
         # Convert lists back to strings
         self.sequence[0] = "".join(self.sequence[0])

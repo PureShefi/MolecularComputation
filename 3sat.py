@@ -93,32 +93,39 @@ def filter_by_sat(lab, sat):
 def three_sat(formula):
     """ Calculate the given 3Sat formula using molecular programming """
     # Parse the formula to its variables
+    print("[*] Parsing formula {}".format(formula))
     sat = parse_sat_formula(formula)
     variables = list(set([x.replace("~", "") for y in sat for x in y]))
     pairs = get_all_dna_pairs(variables)
 
     # Generate the needed dna's from the formula
+    print("[*] Generating edges and nodes based on the formula")
     edges = [get_dna_value(x) for x in pairs]
     nodes = get_nodes_from_edges(variables)
     samples = edges + nodes
 
-    # Get a lot of each sample (2^n)
-    # TODO: Change to PCR?
-    for i in range(5):
-        samples = samples + samples
-
     # Create our lab from the given dna's for the formula
+    print("[*] Creating the lab from the samples. Size: {}".format(len(samples)))
     lab = Lab(samples)
 
+    # Amplify all samples using pcr. Split after running because we need to connect the edges and nodes
+    print("[*] Amplifying samples using PCR")
+    lab.amplify(['a', 'c', 't', 'g'], rounds=5)
+    lab.split()
+
     # Merge all our dna samples
-    for i in range(2):
-        lab.merge()
+    print("[*] Merging our samples")
+    lab.merge()
 
     # Search the sample for satisfying dna to the formula. Correct size and satisfiable
+    print("[*] Filtering the unwanted data")
+    lab.length_sort()
     expected_size = (SIZE*len(variables), SIZE*len(variables))
     lab.filter_by_length(expected_size)
     satisfiable = filter_by_sat(lab, sat).samples != []
 
     return satisfiable
 
-three_sat("(avbvc)^(~av~bvc)")
+formula = "(avbvc)^(~av~bvc)"
+satisfiable = three_sat(formula)
+print("{} is {} satisfiable".format(formula, "" if satisfiable else "not"))
