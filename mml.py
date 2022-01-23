@@ -13,29 +13,35 @@ class Lab():
         self.merge()
 
     def split(self):
+        """ Split the dna into the two sequences """
         self.samples = list(chain.from_iterable(x.split() for x in self.samples))
 
     def merge(self):
+        """ Try to merge two samples based on their sequence """
         for dna in self.samples:
+            # Randomize second dna so each run will be unique and not connect the same dna's
             indexs = list(range(len(self.samples)))
             random.shuffle(indexs)
             for i in indexs:
+                # If second dna still exists try to merge it
                 connector = self.samples[i]
                 if connector.removed == True:
                     continue
 
                 dna.merge(connector)
 
+        # Remove all merged dna's
         self.samples = [x for x in self.samples if x.removed == False]
 
     def extract(self, sequence):
-        """ Remove from the lab all samples that don't have our sequence """
+        """ Remove from the lab all samples that don't have our sequence. Returns whats left """
         leftovers = [x for x in self.samples if not x.has_sequence(sequence)]
         self.samples = [x for x in self.samples if x.has_sequence(sequence)]
 
         return leftovers
 
     def length_sort(self):
+        """ Sort the samples by len their len """
         self.samples.sort(key=lambda x: len(x.sequence[0]) + len(x.sequence[1]), reversed=True)
 
     def filter_by_length(self, expected):
@@ -44,15 +50,20 @@ class Lab():
     def amplify(self, primers, rounds=10):
         """ Amplify a gene based on pcr """
         for i in range(rounds):
+            # Split all dna's to allow connection of primers
             self.split()
+
+            # For each dna, add the primers
             for dna in self.samples:
                 for primer in primers:
                     if dna.add_primer(primer):
                         break
 
+            # Extend the primers
             for dna in self.samples:
                 dna.fill()
 
+            # Merge remaining dna and get rid of what couldn't connect
             self.merge()
             self.cleanup()
 
@@ -61,7 +72,9 @@ class Lab():
         self.samples = [x for x in self.samples if len(x.sequence[0].strip()) != 0 and len(x.sequence[1].strip()) != 0]
 
     def cleave(self, enzyme):
+        """ Cut a dna sample based on an enzym """
         for dna in self.samples:
+            # Try to cut the dna by the enzym, if it succeeded add the second half to the dna samples
             other = dna.cleave(enzyme)
             if other:
                 self.samples.append(other)
@@ -73,9 +86,11 @@ class DNA():
         self.removed = False
 
     def has_sequence(self, sequence):
+        """ Return if the sequence is inside the dna """
         return sequence in self.sequence[0] or sequence in self.sequence[1]
 
     def split(self):
+        """ Split the dna strand into two dna's (Cuts the sequence) """
         return DNA(self.sequence[0], ""), DNA("", self.sequence[1])
 
     def merge(self, other):
@@ -108,9 +123,11 @@ class DNA():
         if not my_diff.startswith(self.get_pair_string(other_diff)):
             return False
 
-
+        # Append the sequences
         self.sequence[my_shorter_index] += other.sequence[my_shorter_index].strip()
         self.sequence[my_larger_index]  += other.sequence[my_larger_index].strip()
+
+        # Set the second dna as used so we wont use it again
         other.removed = True
         return True
 
@@ -139,6 +156,7 @@ class DNA():
         self.sequence[0] = list(self.sequence[0])
         self.sequence[1] = list(self.sequence[1])
 
+        # Fill with the pair of the base
         for i in range(len(self.sequence[0])):
             if self.sequence[0][i] == " ":
                 self.sequence[0][i] = self.get_pair_base(self.sequence[1][i])
@@ -153,6 +171,7 @@ class DNA():
     def add_primer(self, primer):
         """ Add the primer to the sequences. WILL ONLY WORK AFTER SPLIT """
         pair = self.get_pair_string(primer)
+        # Try to see if the primer matches the first/second sequence
         if pair in self.sequence[0]:
             index = self.sequence[0].index(pair)
             self.sequence[1] = " " * index + primer
@@ -168,12 +187,14 @@ class DNA():
 
     def cleave(self, enzyme):
         """ Cut the dna and sequence by the given enzym. If not found return none and do nothing """
+        # Find the location of the enzyme sequence
         try:
             location1 = self.sequence[0].index(enzyme[0])
             location2 = self.sequence[1].index(enzyme[1])
         except ValueError:
             return None
 
+        # If the cut location was found, cut it and return two dnas
         other = DNA(self.sequence[0][location1:], self.sequence[1][location2:])
         self.sequence[0] = self.sequence[0][:location1]
         self.sequence[1] = self.sequence[1][:location2]
@@ -187,6 +208,7 @@ class DNA():
 
     @staticmethod
     def generate_random(size, single_sequence=False):
+        """ Return a randomly generated dna """
         first_sequence = "".join(random.choices(['a', 't', 'c', 'g'], k=size))
         second_sequence = ""
         if not single_sequence:
