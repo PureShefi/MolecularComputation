@@ -18,9 +18,13 @@ class Lab():
         """ Split the dna into the two sequences """
         self.samples = list(chain.from_iterable(x.split() for x in self.samples))
 
-    def merge(self):
+    def merge(self, log=False):
         """ Try to merge two samples based on their sequence """
-        for dna in self.samples:
+
+        for i, dna in enumerate(self.samples):
+            if log:
+                print("\r[*] Merging {}/{}".format(i, len(self.samples)), end="")
+
             # Randomize second dna so each run will be unique and not connect the same dna's
             indexs = list(range(len(self.samples)))
             random.shuffle(indexs)
@@ -31,6 +35,9 @@ class Lab():
                     continue
 
                 dna.merge(connector)
+
+        if log:
+            print()
 
         # Remove all merged dna's
         self.samples = [x for x in self.samples if x.removed == False]
@@ -83,9 +90,11 @@ class Lab():
 
 
 class DNA():
-    def __init__(self, sequence1, sequence2):
+    def __init__(self, sequence1, sequence2, fill=False):
         self.sequence = [sequence1, sequence2]
         self.removed = False
+        if fill:
+            self.sequence[1] = self.get_pair_string(self.sequence[0])
 
     def has_sequence(self, sequence):
         """ Return if the sequence is inside the dna """
@@ -115,6 +124,8 @@ class DNA():
 
         # Get the difference
         my_diff = self.sequence[my_larger_index][my_shorter_len:]
+        if my_diff == "":
+            return False
 
         # Make sure we have enough empty space
         if other.sequence[my_larger_index][:len(my_diff)].strip() != "":
@@ -192,17 +203,19 @@ class DNA():
 
         return True
 
-    def cleave(self, enzyme):
+    def cleave(self, enzyme, distance=(0,0)):
         """ Cut the dna and sequence by the given enzym. If not found return none and do nothing """
         # Find the location of the enzyme sequence
         try:
-            location1 = self.sequence[0].index(enzyme[0])
-            location2 = self.sequence[1].index(enzyme[1])
+            location1 = self.sequence[0].index(enzyme[0]) + len(enzyme[0]) + distance[0]
+            location2 = self.sequence[1].index(enzyme[1]) + len(enzyme[1]) + distance[1]
         except ValueError:
             return None
 
+        padding1 = max(location1-location2, 0) * " "
+        padding2 = max(location2-location1, 0) * " "
         # If the cut location was found, cut it and return two dnas
-        other = DNA(self.sequence[0][location1:], self.sequence[1][location2:])
+        other = DNA(padding1+self.sequence[0][location1:], padding2+self.sequence[1][location2:])
         self.sequence[0] = self.sequence[0][:location1]
         self.sequence[1] = self.sequence[1][:location2]
         return self, other

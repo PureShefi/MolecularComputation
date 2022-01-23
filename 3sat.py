@@ -147,8 +147,8 @@ def three_sat(formula):
     return satisfiable
 
 if __name__ == "__main__":
-    # formula = "(avbvc)^(~av~bvc)"
-    # satisfiable = three_sat(formula)
+    formula = "(avbvc)^(~av~bvc)"
+    satisfiable = three_sat(formula)
 
-    formula = "(avava)^(~av~av~b)"
+    formula = "(avava)^(~av~av~a)"
     satisfiable = three_sat(formula)
