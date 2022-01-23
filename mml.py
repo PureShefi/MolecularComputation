@@ -1,8 +1,9 @@
 from itertools import chain
+import random
 
 class Lab():
-    def __init__(self):
-        self.samples = []
+    def __init__(self, samples):
+        self.samples = samples
 
     def polymerase(self):
         """ Fill the samples based on the longer existing sequence """
@@ -16,7 +17,10 @@ class Lab():
 
     def merge(self):
         for dna in self.samples:
-            for connector in self.samples:
+            indexs = list(range(len(self.samples)))
+            random.shuffle(indexs)
+            for i in indexs:
+                connector = self.samples[i]
                 if connector.removed == True:
                     continue
 
@@ -26,10 +30,16 @@ class Lab():
 
     def extract(self, sequence):
         """ Remove from the lab all samples that don't have our sequence """
+        leftovers = [x for x in self.samples if not x.has_sequence(sequence)]
         self.samples = [x for x in self.samples if x.has_sequence(sequence)]
 
+        return leftovers
+
     def length_sort(self):
-        self.samples.sort(key=lambda x: len(x))
+        self.samples.sort(key=lambda x: len(x.sequence[0]) + len(x.sequence[1]), reversed=True)
+
+    def filter_by_length(self, expected):
+        self.samples = [x for x in self.samples if len(x.sequence[0]) == expected[0] and len(x.sequence[1]) == expected[1]]
 
     def amplify(self, primers, rounds=10):
         """ Amplify a gene based on pcr """
@@ -52,7 +62,7 @@ class Lab():
 
     def cleave(self, enzyme):
         for dna in self.samples:
-            other = dna.cleave(enzyme):
+            other = dna.cleave(enzyme)
             if other:
                 self.samples.append(other)
 
@@ -164,9 +174,9 @@ class DNA():
         except ValueError:
             return None
 
-        other = DNA(self.sequence[0][location1:], self.sequence[0][location2:])
-        self.sequence[0] = self.sequence[:location1]
-        self.sequence[1] = self.sequence[:location2]
+        other = DNA(self.sequence[0][location1:], self.sequence[1][location2:])
+        self.sequence[0] = self.sequence[0][:location1]
+        self.sequence[1] = self.sequence[1][:location2]
         return self, other
 
     def __str__(self):
@@ -174,6 +184,15 @@ class DNA():
 
     def __repr__(self):
         return str(self)
+
+    @staticmethod
+    def generate_random(size, single_sequence=False):
+        first_sequence = "".join(random.choices(['a', 't', 'c', 'g'], k=size))
+        second_sequence = ""
+        if not single_sequence:
+            second_sequnce = DNA.get_pair_string(first_sequence)
+
+        return DNA(first_sequence, second_sequence)
 
     @staticmethod
     def get_pair_base(char):
