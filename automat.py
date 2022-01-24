@@ -1,10 +1,11 @@
 from mml import *
 import copy
 
-PREFIX = "ggatgt"
 A = "ctggct"
 B = "cgcagc"
 T = "tgtcgc"
+PREFIX = "ggatgt"+A
+EXTRACT_VAL = "tcgc"
 
 CLEAVE_DISTANCE = (9, 13)
 IS_ODD_SEQUENCE = "tgtcgc"
@@ -16,16 +17,16 @@ TRANSITIONS = [
     DNA("ggatgg",     "cctaccgcgt"),     # S1 -b-> S0
 
 ]
+# Get a lot of each molecule before even using them in the lab
+for i in range(4):
+    TRANSITIONS = copy.deepcopy(TRANSITIONS) + copy.deepcopy(TRANSITIONS)
 
 CLEAVE_VALUE = ("ggatg", DNA.get_pair_string("ggatg"))
-
 
 def automat_machine_even_b(input_sequence):
     # Generate the lab molucules
     print("[*] Generating molucule lab")
     transitions = copy.deepcopy(TRANSITIONS)
-    for i in range(4):
-        transitions = copy.deepcopy(transitions) + copy.deepcopy(transitions)
     lab = Lab(transitions)
 
     print("[*] Adding input dna sequence")
@@ -36,7 +37,6 @@ def automat_machine_even_b(input_sequence):
     while True:
         # mimick Fok1 cleave
         trash, dna = dna.cleave(CLEAVE_VALUE, CLEAVE_DISTANCE)
-        lab.samples.remove(trash)
         lab.samples.append(dna)
         lab.merge()
 
@@ -45,8 +45,11 @@ def automat_machine_even_b(input_sequence):
             break
 
         # Get our dna to cleave again
-        lab.length_sort()
+        leftovers = lab.extract(EXTRACT_VAL)
         dna = lab.samples[0]
+
+        # Return all the transition states and remove our input dna
+        lab.samples = leftovers
 
     # Using sequence check if an ending exists
     assert dna.sequence[0].strip() != "", "No ending state found"
@@ -56,15 +59,15 @@ def automat_machine_even_b(input_sequence):
 
 if __name__ == "__main__":
     # Validate that the code works
-    print("[*] Testing AT")
+    print("[TEST] Input AT, expected True")
     assert automat_machine_even_b(PREFIX+A+T) == True
-    print("[*] Testing ABT")
+    print("[TEST] Input ABT, expected False")
     assert automat_machine_even_b(PREFIX+A+B+T) == False
-    print("[*] Testing ABBT")
+    print("[TEST] Input ABBT, expected True")
     assert automat_machine_even_b(PREFIX+A+B+B+T) == True
-    print("[*] Testing ABBBT")
+    print("[TEST] Input ABBBT, expected False")
     assert automat_machine_even_b(PREFIX+A+B+B+B+T) == False
-    print("[*] Testing ABABABT")
+    print("[TEST] Input ABABABT, expected False")
     assert automat_machine_even_b(PREFIX+A+B+A+B+A+B+T) == False
-    print("[*] Testing BABABABT")
-    assert automat_machine_even_b(PREFIX+B+A+B+A+B+A+B+T) == False
+    print("[TEST] Input BABT, expected True")
+    assert automat_machine_even_b(PREFIX+B+A+B+T) == True
